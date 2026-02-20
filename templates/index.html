@@ -1,56 +1,913 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>ChatBot PDF</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot UCE - Asistente de PDFs</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #F0F8FF;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Estilos UCE */
+        .uce-primary { background-color: #00529B; }
+        .uce-secondary { background-color: #E31837; }
+        .uce-accent { color: #FFD700; }
+        .uce-light-bg { background-color: #F0F8FF; }
+        .uce-white { background-color: #FFFFFF; }
+        .uce-gray { background-color: #E8ECF1; }
+        .uce-dark-gray { color: #2c3e50; }
+        .uce-chat-bg { background-color: #F5F7FA; }
+        .uce-user-bg { background-color: #E3F2FD; }
+        .uce-bot-bg { background-color: #F1F8E9; }
+
+        /* Layout principal */
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            grid-template-rows: 80px 1fr 100px;
+            height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            grid-column: 1 / 4;
+            grid-row: 1;
+            background-color: #00529B;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-logo {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .header-subtitle {
+            color: #FFD700;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .header-title {
+            flex: 1;
+            text-align: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .header-btn {
+            background-color: white;
+            color: #00529B;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .header-btn:hover {
+            background-color: #FFD700;
+            transform: scale(1.05);
+        }
+
+        /* Panel izquierdo - Historial */
+        .history-panel {
+            grid-column: 1;
+            grid-row: 2;
+            background-color: white;
+            border-right: 1px solid #E8ECF1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .history-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00529B;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            background-color: #00529B;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .new-chat-btn:hover {
+            background-color: #E31837;
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            padding: 12px;
+            border-bottom: 1px solid #E8ECF1;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+
+        .history-item:hover {
+            background-color: #F0F8FF;
+            transform: translateX(5px);
+        }
+
+        .history-item.selected {
+            background-color: #E3F2FD;
+            border-left: 4px solid #00529B;
+        }
+
+        .history-time {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .history-text {
+            font-size: 13px;
+            color: #2c3e50;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .history-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .history-btn.clear {
+            background-color: #E31837;
+            color: white;
+        }
+
+        .history-btn.load {
+            background-color: #FFD700;
+            color: #00529B;
+        }
+
+        /* Panel central - Chat */
+        .chat-panel {
+            grid-column: 2;
+            grid-row: 2;
+            background-color: #F5F7FA;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            max-width: 80%;
+        }
+
+        .message.user {
+            margin-left: auto;
+        }
+
+        .message-content {
+            padding: 15px;
+            border-radius: 15px;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .message.user .message-content {
+            background-color: #E3F2FD;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background-color: #F1F8E9;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message.admin .message-content {
+            background-color: #FFF3E0;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-time {
+            font-size: 10px;
+            color: #666;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        /* Panel derecho - Admin */
+        .admin-panel {
+            grid-column: 3;
+            grid-row: 2;
+            background-color: #E8ECF1;
+            padding: 15px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .admin-panel.visible {
+            display: block;
+        }
+
+        .admin-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00529B;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .admin-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .admin-btn.primary {
+            background-color: #00529B;
+            color: white;
+        }
+
+        .admin-btn.secondary {
+            background-color: #E31837;
+            color: white;
+        }
+
+        .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .doc-list {
+            background-color: white;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 15px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .doc-item {
+            padding: 8px;
+            border-bottom: 1px solid #E8ECF1;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .doc-item:hover {
+            background-color: #F0F8FF;
+        }
+
+        .doc-item.selected {
+            background-color: #E3F2FD;
+        }
+
+        .doc-info {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .system-log {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            height: 150px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        /* Panel de entrada */
+        .input-panel {
+            grid-column: 1 / 4;
+            grid-row: 3;
+            background-color: white;
+            border-top: 2px solid #00529B;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #E8ECF1;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            border-color: #00529B;
+            outline: none;
+            box-shadow: 0 0 10px rgba(0,82,155,0.1);
+        }
+
+        .send-btn {
+            background-color: #E31837;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            background-color: #C62828;
+            transform: scale(1.05);
+        }
+
+        /* Modal para login admin */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-title {
+            color: #00529B;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #E8ECF1;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-btn.primary {
+            background-color: #00529B;
+            color: white;
+        }
+
+        .modal-btn.secondary {
+            background-color: #E8ECF1;
+            color: #2c3e50;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,82,155,0.3);
+            border-radius: 50%;
+            border-top-color: #00529B;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .app-container {
+                grid-template-columns: 250px 1fr 250px;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .app-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 80px 1fr 100px;
+            }
+            
+            .history-panel, .admin-panel {
+                display: none;
+            }
+        }
+    </style>
 </head>
-<body class="bg-light d-flex flex-column min-vh-100">
-
-    <!-- Encabezado -->
-    <header class="bg-primary text-white text-center py-4 mb-4">
-        <h1 class="fw-bold">Universidad Central del Ecuador</h1>
-        <h4 class="fw-light">ChatPDF Simple</h4>
-    </header>
-
-    <!-- Contenido principal -->
-    <main class="container flex-grow-1">
-        <div class="card shadow-sm p-4">
-            <h5 class="mb-3">Subir PDF</h5>
-            <form method="POST" enctype="multipart/form-data" class="mb-4">
-                <div class="input-group">
-                    <input type="file" name="pdf" class="form-control">
-                    <button type="submit" class="btn btn-primary">Cargar</button>
-                </div>
-            </form>
-
-            <h5 class="mb-3">Pregunta</h5>
-            <form method="POST">
-                <div class="input-group">
-                    <input type="text" name="question" class="form-control" placeholder="Escribe tu pregunta aquí...">
-                    <button type="submit" class="btn btn-success">Preguntar</button>
-                </div>
-            </form>
-
-            {% if answer %}
-                <div class="alert alert-info mt-4">
-                    <h6 class="fw-bold">Respuesta:</h6>
-                    <p>{{ answer }}</p>
-                </div>
-            {% endif %}
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-logo">🏛️ UCE Chatbot</div>
+            <div class="header-subtitle">Asistente Inteligente con PDFs</div>
+            <div class="header-title" id="chatTitle">💬 Nuevo Chat</div>
+            <button class="header-btn" id="adminToggleBtn">👤 Usuario</button>
         </div>
-    </main>
 
-    <!-- Pie de página -->
-    <footer class="bg-dark text-white text-center py-3 mt-4">
-        <small>
-            Proyecto desarrollado por: <br>
-            Jose Cuadro · Jostin Lemache · Darwin Toapanta
-        </small>
-    </footer>
+        <!-- Panel izquierdo - Historial -->
+        <div class="history-panel" id="historyPanel">
+            <div class="history-title">💬 Historial de Chats</div>
+            <button class="new-chat-btn" id="newChatBtn">➕ Nuevo Chat</button>
+            
+            <div class="history-list" id="historyList">
+                <!-- Los items se cargarán dinámicamente -->
+            </div>
+            
+            <div class="history-actions">
+                <button class="history-btn clear" id="clearHistoryBtn">🗑️ Limpiar</button>
+                <button class="history-btn load" id="loadHistoryBtn">📂 Cargar</button>
+            </div>
+        </div>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Panel central - Chat -->
+        <div class="chat-panel" id="chatPanel">
+            <div id="messages">
+                <!-- Los mensajes se cargarán dinámicamente -->
+            </div>
+        </div>
+
+        <!-- Panel derecho - Admin -->
+        <div class="admin-panel" id="adminPanel">
+            <div class="admin-title">🔧 Panel de Administración</div>
+            
+            <button class="admin-btn primary" id="uploadBtn">📤 Subir Nuevo PDF</button>
+            <button class="admin-btn secondary" id="rebuildBtn">🔄 Reconstruir Base</button>
+            
+            <div style="margin: 20px 0;">
+                <strong>📁 Documentos Cargados:</strong>
+                <div class="doc-list" id="docList"></div>
+                <div style="display: flex; gap: 5px; margin-top: 5px;">
+                    <button class="admin-btn" style="flex:1; background: #9b59b6; color: white;" id="infoBtn">📄 Ver Info</button>
+                    <button class="admin-btn" style="flex:1; background: #E31837; color: white;" id="deleteBtn">🗑️ Eliminar</button>
+                </div>
+            </div>
+            
+            <strong>📋 Logs del Sistema:</strong>
+            <div class="system-log" id="systemLog"></div>
+        </div>
+
+        <!-- Panel de entrada -->
+        <div class="input-panel">
+            <input type="text" class="input-field" id="messageInput" placeholder="Escribe tu pregunta aquí...">
+            <button class="send-btn" id="sendBtn">🚀 ENVIAR</button>
+        </div>
+    </div>
+
+    <!-- Modal Login Admin -->
+    <div class="modal" id="adminModal">
+        <div class="modal-content">
+            <div class="modal-title">🔐 Acceso Administrador</div>
+            <div style="text-align: center; color: #2c3e50; margin-bottom: 10px;">🏛️ UCE</div>
+            <input type="password" class="modal-input" id="adminPassword" placeholder="Contraseña" autocomplete="off">
+            <div class="modal-buttons">
+                <button class="modal-btn primary" id="loginBtn">✅ Aceptar</button>
+                <button class="modal-btn secondary" id="cancelLoginBtn">❌ Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Estado de la aplicación
+        let isAdmin = false;
+        let currentChatId = 'new';
+        let chatHistory = [];
+        let documents = [];
+        let messagesContainer = document.getElementById('messages');
+        let historyList = document.getElementById('historyList');
+        let docList = document.getElementById('docList');
+        let systemLog = document.getElementById('systemLog');
+        let chatTitle = document.getElementById('chatTitle');
+        let adminPanel = document.getElementById('adminPanel');
+        let adminToggleBtn = document.getElementById('adminToggleBtn');
+        let adminModal = document.getElementById('adminModal');
+        let adminPassword = document.getElementById('adminPassword');
+        let messageInput = document.getElementById('messageInput');
+        
+        // Cargar historial desde localStorage
+        try {
+            const saved = localStorage.getItem('chatHistory');
+            if (saved) {
+                chatHistory = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.error('Error cargando historial:', e);
+        }
+        
+        // Verificar estado de admin al inicio
+        checkAdminStatus();
+        
+        // Funciones de utilidad
+        function addMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    ${message.replace(/\n/g, '<br>')}
+                </div>
+                <div class="message-time">${timestamp}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            return timestamp;
+        }
+        
+        function addSystemMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.style.margin = '10px 0';
+            messageDiv.style.padding = '5px';
+            messageDiv.style.backgroundColor = '#f0f0f0';
+            messageDiv.style.borderRadius = '5px';
+            messageDiv.style.fontStyle = 'italic';
+            messageDiv.style.color = '#666';
+            messageDiv.style.fontSize = '12px';
+            messageDiv.style.textAlign = 'center';
+            messageDiv.textContent = `📢 Sistema: ${message}`;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+        
+        function updateHistoryList() {
+            historyList.innerHTML = '';
+            chatHistory.slice(0, 20).forEach((chat, index) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                if (index === 0) item.classList.add('selected');
+                
+                const query = chat.query.length > 40 ? chat.query.substring(0, 37) + '...' : chat.query;
+                
+                item.innerHTML = `
+                    <div class="history-time">${chat.timestamp || '--:--'}</div>
+                    <div class="history-text">${query}</div>
+                `;
+                
+                item.onclick = () => loadChat(chat);
+                historyList.appendChild(item);
+            });
+            
+            // Guardar en localStorage
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        }
+        
+        function loadChat(chat) {
+            messagesContainer.innerHTML = '';
+            addMessage(chat.query, 'user');
+            addMessage(chat.response, 'bot');
+            
+            chatTitle.textContent = `💬 Chat: ${chat.query.substring(0, 20)}...`;
+        }
+        
+        function createNewChat() {
+            messagesContainer.innerHTML = '';
+            const welcomeMsg = `🏛️ **Bienvenido al Chatbot UCE - Asistente de PDFs**
+
+💡 **¿Cómo usar?**
+• Escribe tus preguntas sobre los documentos PDF
+• Para administrar documentos, cambie a modo Admin
+• Puedes crear nuevos chats usando el botón "Nuevo Chat"
+
+📚 **Ejemplos de preguntas:**
+• ¿Cuántos períodos abarcan la Historia Media?
+• ¿Qué es la Historia Contemporánea?
+• ¿Cuáles son las etapas de la Historia de Ecuador?`;
+            
+            addMessage(welcomeMsg, 'bot');
+            chatTitle.textContent = '💬 Nuevo Chat';
+        }
+        
+        function clearHistory() {
+            if (confirm('¿Está seguro de limpiar TODO el historial de chat?')) {
+                chatHistory = [];
+                updateHistoryList();
+                addSystemMessage('Historial de chat limpiado completamente');
+            }
+        }
+        
+        async function checkAdminStatus() {
+            try {
+                const response = await fetch('/api/admin/status');
+                const data = await response.json();
+                isAdmin = data.is_admin;
+                updateAdminUI();
+            } catch (e) {
+                console.error('Error verificando admin:', e);
+            }
+        }
+        
+        function updateAdminUI() {
+            if (isAdmin) {
+                adminPanel.classList.add('visible');
+                adminToggleBtn.textContent = '🔧 Admin';
+                adminToggleBtn.style.backgroundColor = '#FFD700';
+                adminToggleBtn.style.color = '#00529B';
+                loadDocuments();
+                loadSystemMessages();
+            } else {
+                adminPanel.classList.remove('visible');
+                adminToggleBtn.textContent = '👤 Usuario';
+                adminToggleBtn.style.backgroundColor = 'white';
+                adminToggleBtn.style.color = '#00529B';
+            }
+        }
+        
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/admin/documents');
+                const data = await response.json();
+                documents = data.documents || [];
+                
+                docList.innerHTML = '';
+                documents.forEach(doc => {
+                    const item = document.createElement('div');
+                    item.className = 'doc-item';
+                    item.innerHTML = `
+                        <strong>${doc.filename}</strong>
+                        <div class="doc-info">${doc.pages} páginas - ${doc.size_kb} KB</div>
+                        <div class="doc-info">${doc.upload_date}</div>
+                    `;
+                    item.onclick = () => selectDocument(doc.id);
+                    docList.appendChild(item);
+                });
+            } catch (e) {
+                console.error('Error cargando documentos:', e);
+            }
+        }
+        
+        async function loadSystemMessages() {
+            try {
+                const response = await fetch('/api/admin/messages');
+                const data = await response.json();
+                systemLog.innerHTML = (data.messages || []).map(msg => `• ${msg}`).join('<br>');
+            } catch (e) {
+                console.error('Error cargando logs:', e);
+            }
+        }
+        
+        function selectDocument(docId) {
+            // Implementar selección de documento
+            console.log('Documento seleccionado:', docId);
+        }
+        
+        // Event Listeners
+        adminToggleBtn.onclick = () => {
+            if (isAdmin) {
+                // Logout
+                fetch('/api/admin/logout', { method: 'POST' })
+                    .then(() => {
+                        isAdmin = false;
+                        updateAdminUI();
+                        addSystemMessage('Sesión de administrador cerrada');
+                    });
+            } else {
+                // Mostrar modal login
+                adminModal.classList.add('visible');
+                adminPassword.value = '';
+                adminPassword.focus();
+            }
+        };
+        
+        document.getElementById('loginBtn').onclick = async () => {
+            const password = adminPassword.value;
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    adminModal.classList.remove('visible');
+                    isAdmin = true;
+                    updateAdminUI();
+                    addSystemMessage('✅ Modo Administrador activado');
+                } else {
+                    alert(data.message || 'Contraseña incorrecta');
+                }
+            } catch (e) {
+                alert('Error al conectar con el servidor');
+            }
+        };
+        
+        document.getElementById('cancelLoginBtn').onclick = () => {
+            adminModal.classList.remove('visible');
+        };
+        
+        document.getElementById('newChatBtn').onclick = createNewChat;
+        
+        document.getElementById('clearHistoryBtn').onclick = clearHistory;
+        
+        document.getElementById('loadHistoryBtn').onclick = () => {
+            if (chatHistory.length > 0) {
+                loadChat(chatHistory[0]);
+            }
+        };
+        
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || message === 'Escribe tu pregunta aquí...') return;
+            
+            messageInput.value = '';
+            
+            const timestamp = addMessage(message, 'user');
+            
+            // Guardar en historial
+            const chatEntry = {
+                query: message,
+                response: '...',
+                timestamp: timestamp,
+                date: new Date().toISOString().split('T')[0],
+                id: `chat_${Date.now()}`
+            };
+            chatHistory.unshift(chatEntry);
+            updateHistoryList();
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                
+                // Actualizar respuesta en el historial
+                chatHistory[0].response = data.response;
+                chatHistory[0].timestamp_response = data.timestamp;
+                updateHistoryList();
+                
+                const sender = isAdmin ? 'admin' : 'bot';
+                addMessage(data.response, sender);
+                
+            } catch (e) {
+                addMessage('Error al conectar con el servidor', 'bot');
+            }
+        }
+        
+        document.getElementById('sendBtn').onclick = sendMessage;
+        
+        messageInput.onkeypress = (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        };
+        
+        // Admin actions
+        document.getElementById('uploadBtn').onclick = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.pdf';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const response = await fetch('/api/admin/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    addSystemMessage(data.message);
+                    
+                    if (data.success) {
+                        loadDocuments();
+                        loadSystemMessages();
+                    }
+                } catch (e) {
+                    alert('Error al subir archivo');
+                }
+            };
+            
+            input.click();
+        };
+        
+        document.getElementById('rebuildBtn').onclick = async () => {
+            if (!confirm('¿Reconstruir base de conocimiento? Esto puede tomar unos momentos.')) return;
+            
+            try {
+                const response = await fetch('/api/admin/rebuild', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                addSystemMessage(data.message);
+                loadSystemMessages();
+                
+            } catch (e) {
+                alert('Error al reconstruir');
+            }
+        };
+        
+        document.getElementById('infoBtn').onclick = () => {
+            // Implementar mostrar info del documento seleccionado
+            alert('Seleccione un documento primero');
+        };
+        
+        document.getElementById('deleteBtn').onclick = async () => {
+            // Implementar eliminar documento seleccionado
+            alert('Seleccione un documento para eliminar');
+        };
+        
+        // Cerrar modal con Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && adminModal.classList.contains('visible')) {
+                adminModal.classList.remove('visible');
+            }
+        });
+        
+        // Inicializar
+        createNewChat();
+        updateHistoryList();
+        
+        // Actualizar logs periódicamente si es admin
+        setInterval(() => {
+            if (isAdmin) {
+                loadSystemMessages();
+            }
+        }, 5000);
+    </script>
 </body>
 </html>
