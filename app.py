@@ -1,4 +1,4 @@
-# app.py - Chatbot UCE Versión Web
+# app.py - Chatbot UCE Versión Web Integrada
 import os
 import json
 import hashlib
@@ -37,7 +37,10 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 # Asegurar que existe el directorio de uploads
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# ===== CLASES DEL CHATBOT (mismo código que antes) =====
+# ===== CONTRASEÑA ÚNICA =====
+ADMIN_PASSWORD = "uce2026"  # ¡Una sola contraseña para todo!
+
+# ===== CLASES DEL CHATBOT =====
 
 class UserRole(Enum):
     ADMIN = "admin"
@@ -958,12 +961,12 @@ def chat():
 
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
-    """Login de administrador"""
+    """Login de administrador - Usa la misma contraseña que la interfaz"""
     data = request.json
     password = data.get('password', '')
     
-    # Contraseña fija para demo (cambiar en producción)
-    if password == 'admin123':
+    # Usar la misma contraseña que en el HTML: uce2026
+    if password == ADMIN_PASSWORD:
         session['is_admin'] = True
         session['user_id'] = f"admin_{secrets.token_hex(4)}"
         return jsonify({'success': True, 'message': 'Login exitoso'})
@@ -1048,8 +1051,7 @@ def get_system_messages():
     return jsonify({'messages': messages})
 
 if __name__ == '__main__':
-    print("🚀 Chatbot UCE Web iniciado!")
+    print("🚀 Chatbot UCE Web Integrado!")
     print(f"📱 Abre tu navegador en: http://localhost:5000")
-    print("🔐 Contraseña admin: admin123")
+    print(f"🔐 Contraseña única: {ADMIN_PASSWORD}")
     app.run(debug=True, host='0.0.0.0', port=5000)
-
